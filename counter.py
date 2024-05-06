@@ -67,9 +67,30 @@ def img_preprocess():
 #       img_color = cv.cvtColor(img_cropped, cv.COLOR_GRAY2BGR)
         gray = cv.cvtColor(img_cropped, cv.COLOR_BGR2GRAY)
         ret,thresh1 = cv.threshold(gray,127,255,1)
-        contours,h=cv.findContours(thresh1,1,2)
+        
+        # get contours
+        contours,hierarchy = cv.findContours(thresh1,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+        
+        contours_area = []
+        # calculate area and filter into new array
+        for con in contours:
+            area = cv.contourArea(con)
+            if 70 < area < 5000:
+                contours_area.append(con)
+        
+        contours_circles = []
+        
+        # check if contour is of circular shape
+        for con in contours_area:
+            perimeter = cv.arcLength(con, True)
+            area = cv.contourArea(con)
+            if perimeter == 0:
+                break
+            circularity = 4*3.141592653589793*(area/(perimeter*perimeter))
+            if 0.7 < circularity < 1.3:
+                contours_circles.append(con)
         #sorting the contours by area size ascending 1 - 100
-        cnts = sorted(contours, key=lambda x: cv.contourArea(x))
+        cnts = sorted(contours_circles, key=lambda x: cv.contourArea(x))
         print("there are "+str(len(cnts))+" cells!")
         #       for count, c in enumerate(cnts):
 #           M = cv.moments(c)
