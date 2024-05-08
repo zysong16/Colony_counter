@@ -22,7 +22,7 @@ The Circularity Method involves calculating the circularity of each detected obj
 
 To use this program, follow these steps:
 
-1. **Start the Program**: Run the script in your Python environment. Ensure that you have all the dependencies installed. Please refer to requirements.txt. To start the program, run `python3 counter.py [method]`. There are two methods to choose from, 'w' for Watershed Algorithm and 'c' for the Circularity Method. This choice depends on the nature of the colonies and the specific requirements of your analysis.
+1. **Start the Program**: Run the script in your Python environment. Ensure that you have all the dependencies installed. Please refer to requirements.txt. To start the program, run `python3 counter.py [method]`. There are two methods to choose from, `w` for Watershed Algorithm and `c` for the Circularity Method. This choice depends on the nature of the colonies and the specific requirements of your analysis.
 
 2. **Select an Image**: Upon running, the program will open a file dialog. Navigate to and select the image of the plate you want to analyze.
 
