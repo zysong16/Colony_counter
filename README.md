@@ -31,3 +31,8 @@ To use this program, follow these steps:
 4. **Adjust Parameters**: Interactive sliders will appear, allowing you to fine-tune parameters such as the threshold for foreground detection in the Watershed Algorithm or the minimum and maximum area and circularity in the Circularity Method.
 
 5. **View Results and Count**: After adjusting the parameters, press `p` to print the total number of colonies detected. The results will be displayed visually on the image, and the number of counted colonies will be printed in the console.
+
+## Reference:
+
+https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html <br />
+https://docs.opencv.org/4.x/d3/db4/tutorial_py_watershed.html
