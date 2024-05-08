@@ -1,3 +1,14 @@
+'''
+Software Carpentry EN.540.635.01
+Final Project
+May 2024
+
+Contributors:
+Zhangyi Song
+
+Please refer to the README.md file for more information.
+'''
+import sys
 import cv2 as cv
 import numpy as np
 import tkinter as tk
@@ -5,17 +16,26 @@ from tkinter import filedialog
 
 
 def img_preprocess():
+    '''
+    Opens a file dialog for the user to select an image file, processes the selected image to crop and convert it
+    into grayscale and binary formats.
     
+    Returns:
+        img_cropped (array): The cropped image
+        thresh (array): The binary version of the cropped image
+    '''
     root = tk.Tk()
     root.withdraw()
     root.update()
-    # Open the file dialog to select an image
+    # Open a file dialog to allow user to select an image
     file_path = filedialog.askopenfilename()
     root.update()
-    if file_path:
+    
+    if file_path.split('.')[-1] in ["jpg","png","JPG","PNG"]:
+        # Read the selected image
         img = cv.imread(file_path)
         
-        # Select the area of interest
+        # ROI selection
         r = cv.selectROI("select the area", img)
         x1,y1,width,height = r
         img_cropped = img[y1:y1+height,x1:x1+width]
@@ -26,41 +46,46 @@ def img_preprocess():
         # Convert the grayscale image to binary image using basic binary_inverted thresholding and Otsu's thresholding
         inv = cv.bitwise_not(img_gray)
         ret, thresh = cv.threshold(inv,0,255,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
-        
+    else:
+        raise Exception("Wrong input file format")
+    
     return img_cropped, thresh
         
         
 def watershed(img, img_bin):
+    '''
+    Applies the watershed algorithm to segment colonies in an image based on morphology operations.
+    '''
+    
     # Remove the background noise
     kernel = np.ones((3,3),np.uint8)
     opening = cv.morphologyEx(img_bin, cv.MORPH_OPEN, kernel, iterations = 2)
     
-    # sure background area
+    # Sure background area by dilating the foreground
     sure_bg = cv.dilate(opening,kernel,iterations=3)
     
-    # Finding sure foreground area
+    # Finding sure foreground area by applying distance transform
     dist_transform = cv.distanceTransform(opening,cv.DIST_L2,5)
     
     # Set the default value for sure foreground threshold coefficient
     fg_val = 70
     result = 0
     def update(_):
-        fg_val = cv.getTrackbarPos('fg thresh coeff', window_name)
         
+        # Update foreground threshold value from trackbar
+        fg_val = cv.getTrackbarPos('fg thresh coeff', window_name)
         ret, sure_fg = cv.threshold(dist_transform,(fg_val/100)*dist_transform.max(),255,0)
         
-        # Finding unknown region
+        # Identify unknown region by subtracting sure foreground from background
         sure_fg = np.uint8(sure_fg)
         unknown = cv.subtract(sure_bg,sure_fg)
         
-        # Marker labeling
+        # Marker labelling
         ret, markers = cv.connectedComponents(sure_fg)
         
-        cv.imshow("foreground",sure_fg)
-        #cv.moveWindow("foreground", 50, -30)
-        cv.imshow("background",sure_bg)
-        #cv.moveWindow("background", sure_fg.shape[1]+90, -30)
         
+        cv.imshow("foreground",sure_fg)
+        cv.imshow("background",sure_bg)
         
         # Add one to all labels so that sure background is not 0, but 1
         markers = markers+1
@@ -76,21 +101,15 @@ def watershed(img, img_bin):
         # count the colony numbers
         labels = np.unique(markers)
         nonlocal result
-#       old_result = result
         result = len(labels) - 2 # ignore the background and the unknown region
-        
-#       if result!=old_result:
-#           print(f"The total number of colonies is {result}.")
-        
+                
         
         cv.imshow(window_name, img_tmp)
-        #cv.moveWindow(window_name, 50, sure_fg.shape[0]+40)
         
     window_name = 'Colony Counter'
     cv.namedWindow(window_name,cv.WINDOW_NORMAL)
     cv.createTrackbar('fg thresh coeff', window_name, 0, 100, update)
     cv.setTrackbarMin('fg thresh coeff', window_name, 1)
-    
     cv.setTrackbarPos("fg thresh coeff", window_name, fg_val)
     
     while True:
@@ -103,9 +122,14 @@ def watershed(img, img_bin):
         
     
 def circularity(img, img_bin):
+    '''
+    Calculates and filters shapes in an image based on their area and circularity.
+    '''
+        
     # get contours
     contours,hierarchy = cv.findContours(img_bin,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
     
+    # Initialize area and circularity limits
     A_min = 70
     A_max = 5000
     C_min = 70
@@ -113,6 +137,8 @@ def circularity(img, img_bin):
     result = 0
     
     def update(_):
+        
+        # Update values from trackbars
         A_max = cv.getTrackbarPos('area max', window_name)
         A_min = cv.getTrackbarPos('area min', window_name)
         C_max = cv.getTrackbarPos('circularity max', window_name)
@@ -146,7 +172,6 @@ def circularity(img, img_bin):
         
         nonlocal result
         result = str(len(cnts))
-#
         
         cv.imshow(window_name, img_tmp)
         #cv.waitKey(10)
@@ -184,11 +209,19 @@ def count(algorithm):
     elif algorithm == 'circularity':
         circularity(img_cropped, img_bin)
     else:
-        error('Undefined algorithm')
+        raise Exception('Undefined algorithm')
 
 
 if __name__== '__main__':
-    count('watershed')
-    
+    if len(sys.argv)==1:
+        count('watershed')
+    else:
+        img_cropped, img_bin = img_preprocess()
+        if sys.argv[1] == "w":
+            watershed(img_cropped, img_bin)
+        elif sys.argv[1] == "c":
+            circularity(img_cropped, img_bin)
+        else:
+            raise Exception('Undefined algorithm')
 
     
